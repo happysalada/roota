@@ -38,8 +38,10 @@
   },
   "typings": "global.d.ts",
   "dependencies": {
+    "@biconomy/hyphen": "^1.1.6",
     "@tailwindcss/forms": "^0.5.3",
     "big.js": "^6.2.1",
+    "buffer": "^6.0.3",
     "dotenv": "^16.0.2",
     "human-standard-token-abi": "^2.0.0",
     "svelte-asyncable": "^2.1.0",

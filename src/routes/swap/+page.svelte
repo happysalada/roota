@@ -1,5 +1,6 @@
 <script lang="ts">
   import { selectedAccount, chainData, connected, web3 } from "svelte-web3";
+  import Big from "big.js";
 
   import { goto } from "$app/navigation";
 
@@ -20,7 +21,7 @@
     destinationTokenAmount,
     destinationTokenBalance,
     destinationTokenList,
-    destinationWeb3,
+    exchanges,
   } from "$lib/stores";
 
   if (!$connected || !$selectedAccount) {
@@ -35,6 +36,15 @@
     const tokenList = await list;
     destinationToken.set(defaultToken(tokenList));
   });
+  exchanges.subscribe(async list => {
+    const all = await list;
+    if (all.length > 0 && $sourceTokenAmount != 0) {
+      let total = Big($sourceTokenAmount).minus(all[0].totalFee).toNumber();
+      destinationTokenAmount.set(total)
+    } else {
+      destinationTokenAmount.set(0)
+    }
+  })
 
   async function switchNetwork(chainId: number) {
     if ($chainData.chainId !== chainId) {
@@ -66,7 +76,6 @@
   }
 </script>
 
-<!-- This example requires Tailwind CSS v2.0+ -->
 <div class="bg-white shadow sm:rounded-3xl">
   <div class="md:px-4 py-5 sm:px-6 text-center">
     <h3 class="text-lg font-medium leading-6 text-gray-900">Swap tokens</h3>
@@ -172,9 +181,10 @@
       <div class="bg-white px-4 py-5 text-center">
         <button
           type="button"
+          disabled
           class="inline-flex items-center rounded-full border border-transparent
           bg-pink-600 px-6 py-3 text-lg font-medium text-white shadow-sm
-          hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
+          hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500
           focus:ring-offset-2"
         >
           Swap
@@ -195,9 +205,23 @@
           </svg>
         </button>
       </div>
-      <div class="bg-gray-100 px-4 py-5 text-center">
-        <p>Transaction costs: 1 Gwei</p>
-      </div>
+      {#await $exchanges}
+        <div class="bg-gray-100 px-4 py-5 text-center">
+          <p>Loading ...</p>
+        </div>
+      {:then exchanges}
+        {#each exchanges as exchange, index}
+          <div
+            class="{index % 2
+              ? 'bg-white'
+              : 'bg-gray-100'} px-4 py-5 text-center"
+          >
+            <p>{exchange.name} gasFee: {exchange.gasFee}</p>
+          </div>
+        {/each}
+      {:catch error}
+        <p>{error}</p>
+      {/await}
     </dl>
   </div>
 </div>
