@@ -1,248 +1,203 @@
 <script lang="ts">
-	import { selectedAccount, chainId, connected, chainData, web3 } from "svelte-web3";
-	import Decimal from "decimal.js";
+  import { selectedAccount, chainData, connected, web3 } from "svelte-web3";
 
-	import { goto } from "$app/navigation";
-	import { variables } from "$lib/variables"
+  import { goto } from "$app/navigation";
 
-	if (!$connected || !$selectedAccount) {
-		goto("/");
-	}
-	
-	const transactions = $chainId === 80001 ? fetch(`https://api-testnet.polygonscan.com/api?module=account&action=txlist&address=${$selectedAccount}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${variables.polygonScanApiKey}`)
-		.then(response => response.json())
-		.then(({result, status}) => {
-			if (status == 1) {
-				return result
-			}
-		}) : Promise.resolve([])
+  import ChainDropdown from "$lib/ChainDropdown.svelte";
+  import TokenDropdown from "$lib/TokenDropdown.svelte";
+  import FromToButton from "$lib/FromToButton.svelte";
+  import TokenAmountInput from "$lib/TokenAmountInput.svelte";
+  import TokenAmountOutput from "$lib/TokenAmountOutput.svelte";
+  import { getChainData, balanceToUnits, defaultToken } from "$lib/helpers";
+  import {
+    sourceChainId,
+    sourceToken,
+    sourceTokenAmount,
+    sourceTokenList,
+    sourceTokenBalance,
+    destinationChainId,
+    destinationToken,
+    destinationTokenAmount,
+    destinationTokenBalance,
+    destinationTokenList,
+    destinationWeb3,
+  } from "$lib/stores";
 
-	const symbolPrice = fetch(
-		`https://api.covalenthq.com/v1/pricing/tickers/?quote-currency=USD&format=JSON&tickers=${
-			$chainData?.nativeCurrency?.symbol || "ETH"
-		}&key=${variables.covalentApiKey}` 
-	)
-		.then((response) => response.json())
-		.then((json) => {
-			const { data, error } = json;
-			if (error) {
-				console.log(json.error_code)
-				console.log(json.error_message)
-			} else {
-				const { items } = data;
-				if (items[0]) {
-					return new Decimal(items[0].quote_rate);
-				} else {
-					return new Decimal(1)
-				}
-			}
-		});
-  
-  let filter: string
+  if (!$connected || !$selectedAccount) {
+    goto("/");
+  }
+
+  sourceTokenList.subscribe(async (list) => {
+    const tokenList = await list;
+    sourceToken.set(defaultToken(tokenList));
+  });
+  destinationTokenList.subscribe(async (list) => {
+    const tokenList = await list;
+    destinationToken.set(defaultToken(tokenList));
+  });
+
+  async function switchNetwork(chainId: number) {
+    if ($chainData.chainId !== chainId) {
+      try {
+        await $web3?.eth?.currentProvider?.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: $web3.utils.toHex(chainId) }],
+        });
+      } catch (err: any) {
+        console.log(err);
+        const chain = getChainData(chainId);
+
+        // This error code indicates that the chain has not been added to MetaMask
+        if (err.code === 4902) {
+          await $web3?.eth?.currentProvider?.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainName: chain.name,
+                chainId: $web3.utils.toHex(chainId),
+                nativeCurrency: chain.nativeCurrency,
+                rpcUrls: chain.rpc,
+              },
+            ],
+          });
+        }
+      }
+    }
+  }
 </script>
 
-<div class="bg-white">
-	<div
-		class="max-w-7xl mx-auto py-8 px-4 sm:py-8 sm:px-6 lg:px-8"
-	>
-		<div class="sm:flex sm:items-center">
-			<div class="sm:flex-auto">
-				<h1 class="text-xl font-semibold text-gray-900">Payments</h1>
-				<p class="mt-2 text-sm text-gray-700">All payments for your customers</p>
-			</div>
-			<div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-				<button
-					type="button"
-					class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-					>Export</button
-				>
-			</div>
-		</div>
-		<div class="lg:flex lg:justify-between">
-			<div class="mt-10 w-full max-w-3xl">
-				<label for="currency" class="block text-base font-medium text-gray-500"
-					>Filter</label
-				>
-				<div class="mt-1.5 relative">
-					<input
-						id="currency"
-						name="currency"
-						class="appearance-none block w-full bg-none bg-white border border-gray-500 rounded-md pl-3 pr-10 py-2 text-base text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            bind:value={filter}
-            placeholder="Type any text to filter your payments"
-					/>
-				</div>
-			</div>
-			<div class="mt-10 w-full max-w-xs">
-				<label for="currency" class="block text-base font-medium text-gray-500"
-					>Currency</label
-				>
-				<div class="mt-1.5 relative">
-					<select
-						id="currency"
-						name="currency"
-						class="appearance-none block w-full bg-none bg-white border border-gray-500 rounded-md pl-3 pr-10 py-2 text-base text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-					>
-						<option>Argentina (ARS)</option>
-						<option>Australia (AUD)</option>
-						<option selected>United States (USD)</option>
-						<option>Canada (CAD)</option>
-						<option>France (EUR)</option>
-						<option>Japan (JPY)</option>
-						<option>Nigeria (NGN)</option>
-						<option>Switzerland (CHF)</option>
-						<option>United Kingdom (GBP)</option>
-					</select>
-					<div
-						class="pointer-events-none absolute inset-y-0 right-0 px-2 flex items-center"
-					>
-						<!-- Heroicon name: solid/chevron-down -->
-						<svg
-							class="h-4 w-4 text-gray-400"
-							xmlns="http://www.w3.org/2000/svg"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-							aria-hidden="true"
-						>
-							<path
-								fill-rule="evenodd"
-								d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+<!-- This example requires Tailwind CSS v2.0+ -->
+<div class="bg-white shadow sm:rounded-3xl">
+  <div class="md:px-4 py-5 sm:px-6 text-center">
+    <h3 class="text-lg font-medium leading-6 text-gray-900">Swap tokens</h3>
+    <p class="mt-1 max-w-2xl text-sm text-gray-500">
+      From any chain, to any chain.
+    </p>
+  </div>
+  <div class="border-t border-gray-200">
+    <dl>
+      <div
+        class="bg-gray-100 px-4 py-5 flex justify-around w-full items-center"
+      >
+        <ChainDropdown
+          onDropdownClick={switchNetwork}
+          selectedChainId={$sourceChainId}
+        />
 
-<div class="px-4 sm:px-6 lg:px-8">
-	<div class="mt-8 flex flex-col">
-		<div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-			<div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-				<div
-					class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg"
-				>
-					<table class="min-w-full divide-y divide-gray-300">
-						<thead class="bg-gray-50">
-							<tr>
-								<th
-									scope="col"
-									class="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
-									>Transaction ID</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
-									>Date</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>Wallet</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>Token</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>Quantity</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>SKU</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>Quantity</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>Fiat amount</th
-								>
-								<th
-									scope="col"
-									class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-									>Status</th
-								>
-								<th scope="col" class="relative whitespace-nowrap py-3.5 pl-3 pr-4 sm:pr-6">
-									<span class="sr-only">Edit</span>
-								</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-200 bg-white">
-							{#await Promise.all([transactions, symbolPrice])}
-								<tr>
-									<td class="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-6"
-										>pending</td
-									>
-									<td class="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-6"
-										>pending</td
-									>
-									<td class="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900"
-										>pending</td
-									>
-									<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-900"
-										>pending</td
-									>
-									<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">pending</td>
-									<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">pending</td>
-									<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">pending</td>
-									<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">pending</td>
-									<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">pending</td>
-									<td
-										class="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
-									>
-										<a href="#" class="text-indigo-600 hover:text-indigo-900"
-											>Edit<span class="sr-only">, AAPS0L</span></a
-										>
-									</td>
-								</tr>
-							{:then [payments, symbolPrice]}
-								{#each payments.sort((a, b) => b.timeStamp - a.timeStamp) as {from, hash, timeStamp, value, transactionIndex}}
-									{@const date = new Date(parseInt(timeStamp) * 1000) }
-									{@const transactionAmount = $web3.utils.fromWei(value) }
-									<tr>
-										<td class="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-6"
-											>{hash.substring(0,5)}...{hash.substring(hash.length - 5)}</td
-										>
+        <FromToButton />
 
-										<td class="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-6"
-											>{date.getFullYear()}/{String(date.getMonth()).padStart(2, "0")}/{String(date.getDate()).padStart(2, "0")} {String(date.getHours()).padStart(2, "0")}:{String(date.getMinutes()).padStart(2, "0")}</td
-										>
-										<td class="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900"
-											>{from.substring(0, 5)}...{from.substring(from.length - 5)}</td
-										>
-										<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-900"
-											>{$chainData.nativeCurrency.symbol}</td
-										>
-										<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">{Number(transactionAmount).toPrecision(2)}</td>
-										<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">Couch</td>
-										<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">1.00</td>
-										<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">${(new Decimal(transactionAmount)).mul(symbolPrice).toPrecision(2)}</td>
-										<td class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">{transactionIndex != 0 ? "Confirmed" : "Pending" }</td>
-										<td
-											class="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
-										>
-											<a href="#" class="text-indigo-600 hover:text-indigo-900"
-												>Edit<span class="sr-only">, AAPS0L</span></a
-											>
-										</td>
-									</tr>
-								{/each}
-							{/await}
+        <ChainDropdown
+          onDropdownClick={(chainId) => destinationChainId.set(chainId)}
+          selectedChainId={$destinationChainId}
+        />
+      </div>
 
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
+      <div class="bg-white px-4 py-5 flex justify-around w-full items-center">
+        {#await Promise.all([$sourceTokenList, $sourceTokenBalance])}
+          <p>Loading ...</p>
+        {:then [sourceTokenList, sourceTokenBalance]}
+          <div>
+            <TokenDropdown
+              selectedToken={$sourceToken}
+              onDropdownClick={(token) => sourceToken.set(token)}
+              tokenList={sourceTokenList}
+            />
+
+            <div class="flex justify-between">
+              <p class="text-sm text-gray-500">
+                Balance: {($sourceToken &&
+                  balanceToUnits(
+                    sourceTokenBalance,
+                    $sourceToken.decimals
+                  ).toFixed(2)) ||
+                  0}
+              </p>
+              <span
+                class="ml-2 text-sm text-indigo-500 cursor-pointer"
+                on:click={() =>
+                  $sourceToken &&
+                  sourceTokenAmount.set(
+                    balanceToUnits(
+                      sourceTokenBalance,
+                      $sourceToken.decimals
+                    ).toNumber()
+                  )}>MAX</span
+              >
+            </div>
+          </div>
+        {:catch error}
+          <p>{error}</p>
+        {/await}
+
+        <FromToButton />
+
+        {#await $destinationTokenList}
+          <p>Loading ...</p>
+        {:then destinationTokenList}
+          <div>
+            <TokenDropdown
+              selectedToken={$destinationToken}
+              onDropdownClick={(token) => destinationToken.set(token)}
+              tokenList={destinationTokenList}
+            />
+
+            {#await $destinationTokenBalance}
+              <p>Loading ...</p>
+            {:then destinationTokenBalance}
+              <p class="text-sm text-gray-500">
+                Balance: {($destinationToken &&
+                  balanceToUnits(
+                    destinationTokenBalance,
+                    $destinationToken.decimals
+                  ).toFixed(2)) ||
+                  0}
+              </p>
+            {:catch error}
+              <p>{error}</p>
+            {/await}
+          </div>
+        {:catch error}
+          <p>{error}</p>
+        {/await}
+      </div>
+      <div
+        class="bg-gray-100 px-4 py-5 flex justify-around w-full items-center"
+      >
+        <TokenAmountInput />
+
+        <FromToButton />
+
+        <TokenAmountOutput />
+      </div>
+      <div class="bg-white px-4 py-5 text-center">
+        <button
+          type="button"
+          class="inline-flex items-center rounded-full border border-transparent
+          bg-pink-600 px-6 py-3 text-lg font-medium text-white shadow-sm
+          hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
+          focus:ring-offset-2"
+        >
+          Swap
+
+          <svg
+            class="ml-3 -mr-1 w-6 h-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="bg-gray-100 px-4 py-5 text-center">
+        <p>Transaction costs: 1 Gwei</p>
+      </div>
+    </dl>
+  </div>
 </div>

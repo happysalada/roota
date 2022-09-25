@@ -29,6 +29,7 @@
             packages = with pkgs; [
               nodejs-18_x
               oil
+              nodePackages.typescript-language-server
             ];
             env = [
               {

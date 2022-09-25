@@ -1,6 +1,5 @@
 <script>
-  import { defaultEvmStores, web3, selectedAccount, walletType, connected, chainId, chainData } from 'svelte-web3'
-  import { Balance } from 'svelte-web3/components'
+  import { defaultEvmStores, web3, connected } from 'svelte-web3'
   import { goto } from "$app/navigation"
   import Web3Modal from "web3modal";
   import { variables } from '$lib/variables';
@@ -34,8 +33,7 @@
     defaultEvmStores.setProvider(provider)
   }
   const login = async () => {
-    console.log('$web3.eth.getChainId', await $web3.eth.getChainId())
-    goto("/dashboard")
+    goto("/swap")
   }
   $: if ($connected && $web3) login()
 </script>

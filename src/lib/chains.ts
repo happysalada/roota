@@ -1,0 +1,107 @@
+import type {ChainData} from "globals"
+
+export const chains: {[key: number]: ChainData} = {
+	1: {
+		name: "Ethereum Mainnet",
+		chain: "ETH",
+		rpc: ["https://cloudflare-eth.com", "https://api.mycryptoapi.com/eth"],
+		faucets: [],
+		color: "slate",
+		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+		infoURL: "https://ethereum.org",
+		shortName: "eth",
+		chainId: 1,
+		networkId: 1,
+		slip44: 60,
+    assetSrc: "https://defillama.com/chain-icons/rsz_ethereum.jpg",
+		explorers: [
+			{
+				name: "etherscan",
+				url: "https://etherscan.io",
+				standard: "EIP3091",
+			},
+		],
+	},
+	10: {
+		name: "Optimism",
+		chain: "ETH",
+		rpc: ["https://mainnet.optimism.io/"],
+		color: "red",
+		faucets: [],
+		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+		infoURL: "https://optimism.io",
+		shortName: "oeth",
+		chainId: 10,
+		networkId: 10,
+    assetSrc: "https://defillama.com/chain-icons/rsz_optimism.jpg",
+		slip44: 614,
+		explorers: [
+			{
+				name: "etherscan",
+				url: "https://optimistic.etherscan.io",
+				standard: "none",
+			},
+		],
+	},
+	137: {
+		name: "Polygon Mainnet",
+		chain: "Polygon",
+		rpc: [
+			"https://polygon-rpc.com/",
+			"https://rpc-mainnet.matic.network",
+			"https://matic-mainnet.chainstacklabs.com",
+			"https://rpc-mainnet.maticvigil.com",
+			"https://rpc-mainnet.matic.quiknode.pro",
+			"https://matic-mainnet-full-rpc.bwarelabs.com",
+		],
+		color: "violet",
+		faucets: [],
+		nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+		infoURL: "https://polygon.technology/",
+		shortName: "MATIC",
+    assetSrc: "https://defillama.com/chain-icons/rsz_polygon.jpg",
+		chainId: 137,
+		networkId: 137,
+		slip44: 966,
+		explorers: [
+			{
+				name: "polygonscan",
+				url: "https://polygonscan.com",
+				standard: "EIP3091",
+			},
+		],
+	},
+	42161: {
+		name: "Arbitrum One",
+		chainId: 42161,
+		shortName: "arb1",
+		chain: "ETH",
+		networkId: 42161,
+    assetSrc: "https://defillama.com/chain-icons/rsz_arbitrum.jpg",
+		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+		rpc: [
+			"https://arb1.arbitrum.io/rpc",
+			"wss://arb1.arbitrum.io/ws",
+		],
+		faucets: [],
+		slip44: 9001,
+		explorers: [
+			{
+				name: "Arbiscan",
+				url: "https://arbiscan.io",
+				standard: "EIP3091",
+			},
+			{
+				name: "Arbitrum Explorer",
+				url: "https://explorer.arbitrum.io",
+				standard: "EIP3091",
+			},
+		],
+		infoURL: "https://arbitrum.io",
+		parent: {
+			type: "L2",
+			chain: "eip155-1",
+			bridges: [{ url: "https://bridge.arbitrum.io" }],
+		},
+	},
+};

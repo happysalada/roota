@@ -18,7 +18,7 @@
   <Loader />
 </section>
 {:else}
-<div class="grid">
+<div class="grid bg-neutral-900">
   <nav class="nav">
     <Nav path={$page.url.pathname} />
   </nav>
@@ -33,12 +33,25 @@
 <style>
   /* minmax on the nav is used for expansion on mobile */
   /* minmax on the main is used for long main content */
+
   .grid {
     display: grid;
     grid-template-rows: 10vh minmax(90vh, auto);
     grid-template-areas:
-      'nav'
-      'main'
+      "nav"
+      "main"
+  }
+  
+
+  @media screen and (min-width: 768px) {
+    .grid {
+      display: grid;
+      grid-template-rows: 10vh minmax(90vh, auto);
+      grid-template-columns: 15vw auto 15vw;
+      grid-template-areas:
+        "nav nav nav"
+        ". main ."
+    }
   }
   
   .nav {
@@ -48,5 +61,4 @@
   .main {
     grid-area: main;
   }
-  
 </style>

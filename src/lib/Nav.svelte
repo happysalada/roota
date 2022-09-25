@@ -1,11 +1,7 @@
 <script lang="ts">
-	import {
-		web3,
-		selectedAccount,
-		walletType,
-		chainData,
-	} from "svelte-web3";
-	import { chains } from "../data/chains"
+	import { web3, chainData, walletType } from "svelte-web3";
+	import { chains } from "$lib/chains";
+	import { getChainData } from "$lib/helpers";
 
 	export let path: string;
 	let mobileMenuOpen = false;
@@ -20,41 +16,37 @@
 	function toggleChainDropdownMenu() {
 		chainDropdownMenuOpen = !chainDropdownMenuOpen;
 	}
-  
-  async function switchNetwork(chainId: number) {
-    if ($chainData.chainId !== chainId) {
-      try {
-        await $web3.eth.currentProvider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: $web3.utils.toHex(chainId) }]
-        });
-      } catch (err) {
-        console.log(err)
-        const chain = getChainId(chainId);
-      
-        // This error code indicates that the chain has not been added to MetaMask
-        if (err.code === 4902) {
-          await $web3.eth.currentProvider.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainName: chain.name,
-                chainId: $web3.utils.toHex(chainId),
-                nativeCurrency: chain.nativeCurrency,
-                rpcUrls: chain.rpc
-              }
-            ]
-          });
-        }
-      }
-    }
+	
+	async function switchNetwork(chainId: number) {
+		if ($chainData.chainId !== chainId) {
+			try {
+				await $web3?.eth?.currentProvider?.request({
+					method: "wallet_switchEthereumChain",
+					params: [{ chainId: $web3.utils.toHex(chainId) }],
+				});
+			} catch (err: any) {
+				console.log(err);
+				const chain = getChainData(chainId);
+
+				// This error code indicates that the chain has not been added to MetaMask
+				if (err.code === 4902) {
+					await $web3?.eth?.currentProvider?.request({
+						method: "wallet_addEthereumChain",
+						params: [
+							{
+								chainName: chain.name,
+								chainId: $web3.utils.toHex(chainId),
+								nativeCurrency: chain.nativeCurrency,
+								rpcUrls: chain.rpc,
+							},
+						],
+					});
+				}
+			}
+		}
 		chainDropdownMenuOpen = false;
-  }
-  
-  function getChainId(desiredChainId: number): any {
-    return chains.filter(({chainId}) => desiredChainId == chainId)[0] || chains[0]
-  }
-  
+	}
+
 	$: src =
 		$walletType && $walletType.toLowerCase().includes("metamask")
 			? "/metamask-fox.svg"
@@ -125,21 +117,25 @@
 				class="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start"
 			>
 				<div class="flex-shrink-0 flex items-center">
-					<img class="block lg:hidden h-8 w-auto" src="untitled.svg" alt="Crypton" />
-					<img class="hidden lg:block h-8 w-auto" src="untitled.svg" alt="Crypton" />
+					<img
+						class="block lg:hidden h-8 w-auto"
+						src="untitled.svg"
+						alt="Crypton"
+					/>
+					<img
+						class="hidden lg:block h-8 w-auto"
+						src="untitled.svg"
+						alt="Crypton"
+					/>
 				</div>
 				<div class="hidden sm:block sm:ml-6">
 					<div class="flex space-x-4">
 						<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-
-						<a href="/" class="{path === '/' ? 'nav-active' : 'nav-inactive'} nav-default"
-							>Dashboard</a
-						>
-
 						<a
 							href="/"
-							class="{path === '/settings' ? 'nav-active' : 'nav-inactive'} nav-default"
-							>Settings</a
+							class="{path === '/settings'
+								? 'nav-active'
+								: 'nav-inactive'} nav-default">Settings</a
 						>
 					</div>
 				</div>
@@ -161,7 +157,7 @@
 							<span class="sr-only">Open user menu</span>
 							<img
 								class="h-8 w-8 rounded-full"
-								src={getChainId($chainData?.chainId).assetSrc || ""}
+								src={getChainData($chainData?.chainId).assetSrc || ""}
 								alt=""
 							/>
 						</button>
@@ -186,16 +182,20 @@
 						aria-labelledby="user-menu-button"
 						tabindex="-1"
 					>
-						{#each chains as { assetSrc, name, chainId }}
+						{#each Object.values(chains) as { assetSrc, name, chainId }}
 							<button
 								class="block px-4 py-2 text-sm text-gray-700"
 								role="menuitem"
 								tabindex="-1"
 								id="user-menu-item-0"
-                on:click={() => switchNetwork(chainId)}
+								on:click={() => switchNetwork(chainId)}
 							>
 								<div class="flex">
-									<img class="h-8 w-8 rounded-full" src={assetSrc || ""} alt="" />
+									<img
+										class="h-8 w-8 rounded-full"
+										src={assetSrc || ""}
+										alt=""
+									/>
 									<p class="m-auto">{name}</p>
 								</div>
 							</button>
@@ -240,21 +240,21 @@
 					>
 						<!-- Active: "bg-gray-100", Not Active: "" -->
 						<a
-							href="#"
+							href="/"
 							class="block px-4 py-2 text-sm text-gray-700"
 							role="menuitem"
 							tabindex="-1"
 							id="user-menu-item-0">Your Profile</a
 						>
 						<a
-							href="#"
+							href="/"
 							class="block px-4 py-2 text-sm text-gray-700"
 							role="menuitem"
 							tabindex="-1"
 							id="user-menu-item-1">Settings</a
 						>
 						<a
-							href="#"
+							href="/"
 							class="block px-4 py-2 text-sm text-gray-700"
 							role="menuitem"
 							tabindex="-1"
@@ -271,14 +271,9 @@
 		<div class="px-2 pt-2 pb-3 space-y-1">
 			<a
 				href="/"
-				class="{path === '/' ? 'nav-active' : 'nav-inactive'} nav-default block"
-				>Dashboard</a
-			>
-
-			<a
-				href="/"
-				class="{path === '/settings' ? 'nav-active' : 'nav-inactive'} nav-default block"
-				>Settings</a
+				class="{path === '/settings'
+					? 'nav-active'
+					: 'nav-inactive'} nav-default block">Settings</a
 			>
 		</div>
 	</div>
