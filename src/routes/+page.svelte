@@ -147,7 +147,7 @@
 					>
 						<span class="inline-flex rounded-md shadow">
 							<Web3Modal
-								classes="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50"
+								class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50"
 								text="Connect wallet"
 							/>
 						</span>

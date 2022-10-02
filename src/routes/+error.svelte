@@ -1,10 +1,24 @@
 <script lang="ts">
-  export let status
-  export let error
+  export let status;
+  export let error;
 
-  const dev = process.env.NODE_ENV === 'development'
-  console.log(error)
+  const dev = process.env.NODE_ENV === "development";
+  console.log(status, error);
 </script>
+
+<svelte:head>
+  <title>{status}</title>
+</svelte:head>
+
+<h1>{status}</h1>
+
+{#if error}
+  <p>{error.message}</p>
+
+  {#if dev && error.stack}
+    <pre>{error.stack}</pre>
+  {/if}
+{/if}
 
 <style>
   h1,
@@ -28,15 +42,3 @@
     }
   }
 </style>
-
-<svelte:head>
-  <title>{status}</title>
-</svelte:head>
-
-<h1>{status}</h1>
-
-<p>{error.message}</p>
-
-{#if dev && error.stack}
-<pre>{error.stack}</pre>
-{/if}
