@@ -1,15 +1,15 @@
 #!/usr/bin/env oil
 
 proc dev() {
-  npm run dev
+  pnpm run dev
 }
 
 proc update_deps() {
-  ncu -u
+  pnpm up --interactive --latest
 }
 
 proc build() {
-  npm run build
+  pnpm run build
 }
 
 @ARGV

@@ -27,9 +27,10 @@
           in
           pkgs.devshell.mkShell {
             packages = with pkgs; [
-              nodejs-18_x
+              nodejs
               oil
               nodePackages.typescript-language-server
+              nodePackages.pnpm
             ];
             env = [
               {
